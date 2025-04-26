@@ -1,0 +1,110 @@
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ print (include "downloaders.fullname" .) "-qbtorrent" }}
+  labels:
+    app.kubernetes.io/name: qbtorrent
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: qbtorrent
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: qbtorrent
+        {{- include "downloaders.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: qbtorrent
+        image: lscr.io/linuxserver/qbittorrent:{{ .Values.qbtorrent.imgVersion }}
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PGID
+          value: {{ .Values.PGID | quote }}
+        - name: PUID
+          value: {{ .Values.PUID | quote }}
+        - name: TZ
+          value: {{ .Values.TZ | quote }}
+        - name: DOCKER_MODS
+          value: ghcr.io/vuetorrent/vuetorrent-lsio-mod:{{ .Values.qbtorrent.vueTorrentVersion }}
+        volumeMounts:
+        - name: config
+          mountPath: "/config"
+          subPath: qbtorrent
+        - name: downloads
+          mountPath: "/downloads"
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: {{ .Values.backupExistingClaim }}
+      - name: downloads
+        persistentVolumeClaim:
+          claimName: {{ .Values.downloadsExistingClaim }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: qbtorrent
+  labels:
+    app.kubernetes.io/name: qbtorrent
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  selector:
+      app.kubernetes.io/name: qbtorrent
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  ports:   
+    - name: qbtorrent-8080
+      protocol: TCP
+      port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qbtorrent-ingress
+  labels:
+    app.kubernetes.io/name: qbtorrent
+    {{- include "downloaders.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.clusterIssuer | quote }}
+spec:
+  ingressClassName: {{ .Values.ingressClass }}
+  rules:
+  - host: {{ .Values.qbtorrent.url }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: qbtorrent
+            port:
+              number: 8080
+  tls:
+  - hosts:
+    -  {{ .Values.qbtorrent.url }}
+    secretName: {{ print .Values.qbtorrent.url "-tls" }}

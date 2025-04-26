@@ -1,0 +1,13 @@
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+clusterIssuer: letsencrypt
+ingressClassName: nginx
+
+reverse:
+- name: test
+  backendProtocol: HTTP
+  host: test.example.com
+  port: 80
+  externalName: test.external.com

@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "foundry.fullname" . }}
+  labels:
+    {{- include "foundry.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "foundry.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "foundry.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "felddy/foundryvtt:{{ .Chart.AppVersion }}"
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 30000
+        env:
+        - name: CONTAINER_PRESERVE_CONFIG
+          value: "true"
+        - name: CONTAINER_CACHE
+          value: "/data/install"
+        volumeMounts:
+        - name: data
+          mountPath: "/data"
+        - name: backup
+          mountPath: "/data/Backups"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ .Values.existingClaim }}
+      - name: backup
+        persistentVolumeClaim:
+          claimName: {{ .Values.backupExistingClaim }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

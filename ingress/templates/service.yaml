@@ -1,0 +1,16 @@
+{{- range .Values.reverse -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ print .name "-service" }}
+  labels:
+    {{- include "ingress.labels" $ | nindent 4 }}
+spec:
+  type: ExternalName
+  ports:
+    - port: {{ .port }}
+      protocol: TCP
+      name: {{ print .name "-" .port }}
+  externalName: {{ .externalName }}
+---
+{{- end }}

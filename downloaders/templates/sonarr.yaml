@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ print (include "downloaders.fullname" .) "-sonarr" }}
+  labels:
+    app.kubernetes.io/name: sonarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sonarr
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: sonarr
+        {{- include "downloaders.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: sonarr
+        image: lscr.io/linuxserver/sonarr:{{ .Values.sonarr.imgVersion }}
+        ports:
+        - containerPort: 8989
+        env:
+        - name: PGID
+          value: {{ .Values.PGID | quote }}
+        - name: PUID
+          value: {{ .Values.PUID | quote }}
+        - name: TZ
+          value: {{ .Values.TZ | quote }}
+        volumeMounts:
+        - name: config
+          mountPath: "/config"
+        - name: downloads
+          mountPath: "/downloads"
+        - name: tvseries
+          mountPath: "/tv"
+        - name: backup
+          mountPath: "/config/backupFs"
+          subPath: sonarr
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: {{ .Values.sonarr.existingClaim }}
+      - name: downloads
+        persistentVolumeClaim:
+          claimName: {{ .Values.downloadsExistingClaim }}
+      - name: tvseries
+        persistentVolumeClaim:
+          claimName: {{ .Values.tvseriesExistingClaim }}
+      - name: backup
+        persistentVolumeClaim:
+          claimName: {{ .Values.backupExistingClaim }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: sonarr
+  labels:
+    app.kubernetes.io/name: sonarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  selector:
+      app.kubernetes.io/name: sonarr
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  ports:   
+    - name: sonarr-8989
+      protocol: TCP
+      port: 8989
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarr-ingress
+  labels:
+    app.kubernetes.io/name: sonarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.clusterIssuer | quote }}
+spec:
+  ingressClassName: {{ .Values.ingressClass }}
+  rules:
+  - host: {{ .Values.sonarr.url }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: sonarr
+            port:
+              number: 8989
+  tls:
+  - hosts:
+    -  {{ .Values.sonarr.url }}
+    secretName: {{ print .Values.sonarr.url "-tls" }}

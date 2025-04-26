@@ -1,0 +1,53 @@
+# This is to override the chart name.
+nameOverride: ""
+fullnameOverride: ""
+
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+podAnnotations: {}
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+podLabels: {}
+
+tolerations: []
+
+affinity: {}
+
+PGID: 100
+PUID: 100
+TZ: Europe/Rome
+clusterIssuer: letsencrypt
+ingressClass: nginx
+
+downloadsExistingClaim: downloads-claim
+moviesExistingClaim: movies-claim
+tvseriesExistingClaim: tvseries-claim
+backupExistingClaim: downloaders-backup-claim
+nasExistingClaim: kube-backup-claim
+
+cron: "*/1 * * * *"
+
+prowlarr:
+  imgVersion: 1.32.2
+  existingClaim: prowlarr-config-claim
+  url: prowlarr.test.com
+
+deluge:
+  imgVersion: 2.1.1
+  existingClaim: deluge-config-claim
+  url: deluge.test.com
+
+radarr:
+  imgVersion: 5.20.2
+  existingClaim: radarr-config-claim
+  url: radarr.test.com
+
+sonarr:
+  imgVersion: 4.0.14
+  existingClaim: sonarr-config-claim
+  url: sonarr.test.com
+
+qbtorrent:
+  imgVersion: 5.0.4
+  vueTorrentVersion: 2.24.1
+  url: deluge.test.com

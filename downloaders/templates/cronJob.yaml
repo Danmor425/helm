@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ print (include "downloaders.fullname" .) "-backup" }}
+  labels:
+    app.kubernetes.io/name: backup
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cron | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: alpine
+              image: instrumentisto/rsync-ssh:latest
+              command: ["rsync", "-av", "/source/", "/dest"]
+              volumeMounts:
+              - name: source
+                mountPath: "/source"
+              - name: dest
+                mountPath: "/dest"
+                subPath: downloaders
+          volumes:
+          - name: source
+            persistentVolumeClaim:
+              claimName: {{ .Values.backupExistingClaim }}
+          - name: dest
+            persistentVolumeClaim:
+              claimName: {{ .Values.nasExistingClaim }}
+          restartPolicy: OnFailure
+  successfulJobsHistoryLimit: 1

@@ -1,0 +1,117 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ print (include "downloaders.fullname" .) "-radarr" }}
+  labels:
+    app.kubernetes.io/name: radarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: radarr
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: radarr
+        {{- include "downloaders.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: radarr
+        image: lscr.io/linuxserver/radarr:{{ .Values.radarr.imgVersion }}
+        ports:
+        - containerPort: 7878
+        env:
+        - name: PGID
+          value: {{ .Values.PGID | quote }}
+        - name: PUID
+          value: {{ .Values.PUID | quote }}
+        - name: TZ
+          value: {{ .Values.TZ | quote }}
+        volumeMounts:
+        - name: config
+          mountPath: "/config"
+        - name: downloads
+          mountPath: "/downloads"
+        - name: movies
+          mountPath: "/movies"
+        - name: backup
+          mountPath: "/config/backupFs"
+          subPath: radarr
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: {{ .Values.radarr.existingClaim }}
+      - name: downloads
+        persistentVolumeClaim:
+          claimName: {{ .Values.downloadsExistingClaim }}
+      - name: movies
+        persistentVolumeClaim:
+          claimName: {{ .Values.moviesExistingClaim }}
+      - name: backup
+        persistentVolumeClaim:
+          claimName: {{ .Values.backupExistingClaim }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: radarr
+  labels:
+    app.kubernetes.io/name: radarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  selector:
+      app.kubernetes.io/name: radarr
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  ports:   
+    - name: radarr-7878
+      protocol: TCP
+      port: 7878
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: radarr-ingress
+  labels:
+    app.kubernetes.io/name: radarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.clusterIssuer | quote }}
+spec:
+  ingressClassName: {{ .Values.ingressClass }}
+  rules:
+  - host: {{ .Values.radarr.url }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: radarr
+            port:
+              number: 7878
+  tls:
+  - hosts:
+    -  {{ .Values.radarr.url }}
+    secretName: {{ print .Values.radarr.url "-tls" }}

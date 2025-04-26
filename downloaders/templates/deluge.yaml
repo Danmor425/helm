@@ -1,0 +1,109 @@
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ print (include "downloaders.fullname" .) "-deluge" }}
+  labels:
+    app.kubernetes.io/name: deluge
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: deluge
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: deluge
+        {{- include "downloaders.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: deluge
+        image: linuxserver/deluge:{{ .Values.deluge.imgVersion }}
+        ports:
+        - containerPort: 58846
+        - containerPort: 58946
+        - containerPort: 8112
+        env:
+        - name: PGID
+          value: {{ .Values.PGID | quote }}
+        - name: PUID
+          value: {{ .Values.PUID | quote }}
+        - name: TZ
+          value: {{ .Values.TZ | quote }}
+        volumeMounts:
+        - name: config
+          mountPath: "/config"
+        - name: downloads
+          mountPath: "/downloads"
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: {{ .Values.deluge.existingClaim }}
+      - name: downloads
+        persistentVolumeClaim:
+          claimName: {{ .Values.downloadsExistingClaim }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: deluge
+  labels:
+    app.kubernetes.io/name: deluge
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  selector:
+      app.kubernetes.io/name: deluge
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  ports:   
+    - name: deluge-8112
+      protocol: TCP
+      port: 8112
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: deluge-ingress
+  labels:
+    app.kubernetes.io/name: deluge
+    {{- include "downloaders.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.clusterIssuer | quote }}
+spec:
+  ingressClassName: {{ .Values.ingressClass }}
+  rules:
+  - host: {{ .Values.deluge.url }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: deluge
+            port:
+              number: 8112
+  tls:
+  - hosts:
+    -  {{ .Values.deluge.url }}
+    secretName: {{ print .Values.deluge.url "-tls" }}

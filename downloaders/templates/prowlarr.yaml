@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ print (include "downloaders.fullname" .) "-prowlarr" }}
+  labels:
+    app.kubernetes.io/name: prowlarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prowlarr
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: prowlarr
+        {{- include "downloaders.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: prowlarr
+        image: lscr.io/linuxserver/prowlarr:{{ .Values.prowlarr.imgVersion }}
+        ports:
+        - containerPort: 9696
+        env:
+        - name: PGID
+          value: {{ .Values.PGID | quote }}
+        - name: PUID
+          value: {{ .Values.PUID | quote }}
+        - name: TZ
+          value: {{ .Values.TZ | quote }}
+        volumeMounts:
+        - name: config
+          mountPath: "/config"
+        - name: backup
+          mountPath: "/config/backupFs"
+          subPath: prowlarr
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: {{ .Values.prowlarr.existingClaim }}
+      - name: backup
+        persistentVolumeClaim:
+          claimName: {{ .Values.backupExistingClaim }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: prowlarr
+  labels:
+    app.kubernetes.io/name: prowlarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+spec:
+  selector:
+      app.kubernetes.io/name: prowlarr
+      {{- include "downloaders.selectorLabels" . | nindent 6 }}
+  ports:   
+    - name: prowlarr-9696
+      protocol: TCP
+      port: 9696
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prowlarr-ingress
+  labels:
+    app.kubernetes.io/name: prowlarr
+    {{- include "downloaders.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.clusterIssuer | quote }}
+spec:
+  ingressClassName: {{ .Values.ingressClass }}
+  rules:
+  - host: {{ .Values.prowlarr.url }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: prowlarr
+            port:
+              number: 9696
+  tls:
+  - hosts:
+    -  {{ .Values.prowlarr.url }}
+    secretName: {{ print .Values.prowlarr.url "-tls" }}
