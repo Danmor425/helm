@@ -12,7 +12,7 @@ spec:
         spec:
           containers:
             - name: alpine
-              image: instrumentisto/rsync-ssh:latest
+              image: ghcr.io/danmor425/rsync:1.0.0
               command: ["rsync", "-av", "/source/", "/dest"]
               volumeMounts:
               - name: source

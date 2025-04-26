@@ -3,7 +3,17 @@ entries:
   downloaders:
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2025-04-26T10:02:48.931741+02:00"
+    created: "2025-04-26T12:08:59.91988+02:00"
+    description: A Helm chart for Kubernetes
+    digest: e6a7129c454195674484458f6460c360a549dbdffb0d4b644cba6af3fa5bc91c
+    name: downloaders
+    type: application
+    urls:
+    - downloaders-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2025-04-26T12:08:59.91959+02:00"
     description: A Helm chart for Kubernetes
     digest: 347f35dfa978bc0a74b0b2bcfd934687e1365a1b9a512d04b302c001a6b02c38
     name: downloaders
@@ -14,7 +24,17 @@ entries:
   foundry:
   - apiVersion: v2
     appVersion: "12.331"
-    created: "2025-04-26T10:02:48.932021+02:00"
+    created: "2025-04-26T12:08:59.920689+02:00"
+    description: A Helm chart for Foundry Virtual Tabletop
+    digest: ae248937ddc96dcbeef273b2eae70c8df83e847911ea03b95b39b4560f067ef1
+    name: foundry
+    type: application
+    urls:
+    - foundry-0.1.1.tgz
+    version: 0.1.1
+  - apiVersion: v2
+    appVersion: "12.331"
+    created: "2025-04-26T12:08:59.920433+02:00"
     description: A Helm chart for Foundry Virtual Tabletop
     digest: 41c9f7fab3c77745954f7475a63326d91423b3be9468198a2e5f9b458095f0d1
     name: foundry
@@ -25,7 +45,7 @@ entries:
   ingress:
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2025-04-26T10:02:48.93219+02:00"
+    created: "2025-04-26T12:08:59.920927+02:00"
     description: A Helm chart to create reverse proxy
     digest: 0981b6f36532b69b12f1dd337639c4a8e4eb7e2a1448347147af62e108c3015e
     name: ingress
@@ -33,4 +53,4 @@ entries:
     urls:
     - ingress-0.1.0.tgz
     version: 0.1.0
-generated: "2025-04-26T10:02:48.931252+02:00"
+generated: "2025-04-26T12:08:59.918674+02:00"
