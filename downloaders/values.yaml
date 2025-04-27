@@ -32,11 +32,6 @@ prowlarr:
   existingClaim: prowlarr-config-claim
   url: prowlarr.test.com
 
-deluge:
-  imgVersion: 2.1.1
-  existingClaim: deluge-config-claim
-  url: deluge.test.com
-
 radarr:
   imgVersion: 5.20.2
   existingClaim: radarr-config-claim
