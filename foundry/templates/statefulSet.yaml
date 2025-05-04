@@ -39,6 +39,10 @@ spec:
           mountPath: "/data"
         - name: backup
           mountPath: "/data/Backups"
+        securityContext:
+          runAsUser: 421
+          runAsGroup: 421
+          fsGroup: 421
       volumes:
       - name: data
         persistentVolumeClaim:
