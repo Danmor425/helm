@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: {{ .Chart.Name }}
-        image: "felddy/foundryvtt:{{ .Chart.AppVersion }}"
+        image: "felddy/foundryvtt:{{ .Values.foundryVersion }}"
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 30000
