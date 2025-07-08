@@ -1,3 +1,4 @@
+{{- if .Values.backup -}}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -29,3 +30,4 @@ spec:
               claimName: {{ .Values.nasExistingClaim }}
           restartPolicy: OnFailure
   successfulJobsHistoryLimit: 1
+{{- end }}
