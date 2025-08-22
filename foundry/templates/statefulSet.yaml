@@ -25,15 +25,10 @@ spec:
     spec:
       containers:
       - name: {{ .Chart.Name }}
-        image: "felddy/foundryvtt:{{ .Values.foundryVersion }}"
+        image: "ghcr.io/danmor425/foundry:{{ .Values.foundryVersion }}"
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 30000
-        env:
-        - name: CONTAINER_PRESERVE_CONFIG
-          value: "true"
-        - name: CONTAINER_CACHE
-          value: "/data/install"
         volumeMounts:
         - name: data
           mountPath: "/data"
